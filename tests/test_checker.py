@@ -527,6 +527,24 @@ class TestCli(unittest.TestCase):
                 check=False,
             )
 
+    def test_unreadable_file_exits_2_without_traceback(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            bad_utf8 = Path(tmp) / "bad.etsah"
+            bad_utf8.write_bytes(b"\xff\xfe\x00not utf-8")
+            targets = [Path(tmp) / "no-such-file.etsah", Path(tmp), bad_utf8]
+            for cmd in ("check", "ast"):
+                for target in targets:
+                    with self.subTest(cmd=cmd, target=target.name):
+                        result = subprocess.run(
+                            [sys.executable, str(ROOT / "etsah.py"), cmd, str(target)],
+                            capture_output=True,
+                            text=True,
+                            check=False,
+                        )
+                        self.assertEqual(result.returncode, 2, result.stdout + result.stderr)
+                        self.assertNotIn("Traceback", result.stderr)
+                        self.assertTrue(result.stderr.startswith("[ERROR] "), result.stderr)
+
     def test_exit_codes(self) -> None:
         ok = self._run(
             """

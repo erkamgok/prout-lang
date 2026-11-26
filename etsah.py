@@ -3359,7 +3359,11 @@ def main() -> None:
         _import_tools(args.kind, args.file)
         return
 
-    text = open(args.file, encoding="utf-8").read()
+    try:
+        text = open(args.file, encoding="utf-8").read()
+    except (OSError, UnicodeDecodeError) as ex:
+        print(f"[ERROR] {ex}", file=sys.stderr)
+        sys.exit(2)
     try:
         program = Parser(text).parse()
     except ProutError as ex:
